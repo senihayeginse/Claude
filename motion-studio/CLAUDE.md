@@ -22,3 +22,12 @@
    motion quality, variety, brand accuracy, sound sync.
 3. Fix the 3 worst problems. Repeat until every score is 8+.
 4. Only then do the full render.
+
+## Tools
+- Page contract: `window.FILM = { width, height, duration, fps }` and `window.seek(t)`;
+  `window.RENDER` is true while rendering. `render.mjs` warns on seek-history
+  dependence, running CSS animations, and Math.random/rAF/setTimeout/setInterval calls.
+- `python3 beats.py score.wav --normalize score.norm.wav` → beats.json + -14 LUFS copy.
+  `python3 beats.py --bpm 120 --duration 30` → grid for a score you are about to synthesize.
+- `node render.mjs --sheet` → out/sheet.png, one labelled frame per beat (review loop step 1).
+- `node render.mjs --audio score.norm.wav` → out/film.mp4 (H.264 yuv420p CRF 16).
