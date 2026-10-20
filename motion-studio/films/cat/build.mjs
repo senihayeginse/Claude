@@ -12,6 +12,7 @@ const W = 980, H = 736, FPS = tracks.fps, END = tracks.frames;
 const INK = [0.137, 0.137, 0.137, 1];
 const EYE = [0.96, 0.96, 0.96, 1];
 const TAIL_W = 20;
+const GROUND = 461; // y of the body's flat base
 
 const still = (k) => ({ a: 0, k });
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -125,11 +126,14 @@ function tailPath({ tip, tail }) {
     const hi = xs.find((k) => k >= x) ?? xs[xs.length - 1];
     return lo === hi ? tail[lo] : lerp(tail[lo], tail[hi], (x - lo) / (hi - lo));
   };
-  const pts = [tip, ...TAIL_AT.map((x) => [x, at(x)]), [412, 452], [436, 452]];
+  // Near the body the tail lies on the floor: its lower edge runs flush with the
+  // flat base of the body instead of bulging below it.
+  const floor = GROUND - TAIL_W / 2 - 0.5;
+  const pts = [tip, ...TAIL_AT.map((x) => [x, x >= 370 ? Math.min(at(x), floor) : at(x)]), [412, floor], [436, floor]];
   // Catmull-Rom through the points, as cubic tangents.
   return shape(pts.map((p, n) => {
     const a = pts[Math.max(n - 1, 0)], b = pts[Math.min(n + 1, pts.length - 1)];
-    const t = [(b[0] - a[0]) / 6, (b[1] - a[1]) / 6];
+    const t = [(b[0] - a[0]) / 6, n >= pts.length - 2 ? 0 : (b[1] - a[1]) / 6]; // flat where it meets the body
     return [p[0], p[1], [-t[0], -t[1]], t];
   }), false);
 }
