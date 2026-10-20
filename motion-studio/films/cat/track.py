@@ -14,10 +14,45 @@ import subprocess
 
 import numpy as np
 from scipy import ndimage
+from skimage.morphology import skeletonize
 
 PERIOD, START = 270, 100
 X0, Y0, W, H = 260, 220, 400, 260          # crop around the cat
 TAIL_X = [315, 325, 335, 345, 355, 365, 375, 385, 395]
+SPINE_N = 7          # points along the tail's centreline, tip first
+BODY_X = 399         # the tail is everything left of this column
+
+
+def spine(ink):
+    """Tail centreline from tip to body as SPINE_N points evenly spaced along its length.
+
+    Thinning the tail mask follows the curl at the tip, which per-column sampling cannot."""
+    m = ink.copy()
+    m[:, BODY_X - X0:] = False
+    lab, _ = ndimage.label(m)
+    edge = lab[:, BODY_X - X0 - 1]
+    m = lab == np.bincount(edge[edge > 0]).argmax()
+    sk = skeletonize(m)
+    pts = {tuple(p) for p in np.argwhere(sk)}
+    nbrs = lambda p: [(p[0] + dy, p[1] + dx) for dy in (-1, 0, 1) for dx in (-1, 0, 1)
+                      if (dy or dx) and (p[0] + dy, p[1] + dx) in pts]
+    root = max(pts, key=lambda p: (p[1], -abs(p[0] - (H - 15))))      # where it enters the body
+    prev, dist, queue = {root: None}, {root: 0.0}, [root]
+    for p in queue:                                                    # BFS over the skeleton
+        for q in nbrs(p):
+            if q not in prev:
+                prev[q] = p
+                dist[q] = dist[p] + float(np.hypot(q[0] - p[0], q[1] - p[1]))
+                queue.append(q)
+    tip = max(dist, key=dist.get)
+    path = [tip]
+    while prev[path[-1]] is not None:
+        path.append(prev[path[-1]])
+    path = np.array(path, float)                                       # tip -> root, (y, x)
+    seg = np.r_[0, np.cumsum(np.hypot(*np.diff(path, axis=0).T))]
+    at = np.linspace(0, seg[-1], SPINE_N)
+    ys, xs = np.interp(at, seg, path[:, 0]), np.interp(at, seg, path[:, 1])
+    return [[round(float(x + X0), 2), round(float(y + Y0), 2)] for x, y in zip(xs, ys)]
 
 
 def frames(video):
@@ -60,6 +95,7 @@ def measure(f):
         "eye": eyes[0] if eyes else None,
         "tail": tail,
         "tip": tip,
+        "spine": spine(ink),
     }
 
 

@@ -116,20 +116,14 @@ function lidded(r, cut, sy) {
 }
 const eyeCentre = (e) => [e.x, isBlink(e) ? (e.top + e.bottom) / 2 : e.bottom - (e.w + 1) / 2];
 
-// Tail: smooth curve from the round tip through the measured centreline, ending
-// well inside the body so the join never shows.
-const TAIL_AT = [330, 350, 370, 390];
-function tailPath({ tip, tail }) {
-  const xs = Object.keys(tail).map(Number).filter((x) => x > tip[0] + 2).sort((a, b) => a - b);
-  const at = (x) => {
-    const lo = xs.filter((k) => k <= x).pop() ?? xs[0];
-    const hi = xs.find((k) => k >= x) ?? xs[xs.length - 1];
-    return lo === hi ? tail[lo] : lerp(tail[lo], tail[hi], (x - lo) / (hi - lo));
-  };
+// Tail: smooth curve along the measured centreline (tip first), ending well inside
+// the body so the join never shows. The spine's last point is dropped: thinning bends
+// it down into the corner where the tail meets the body.
+function tailPath({ spine }) {
   // Near the body the tail lies on the floor: its lower edge runs flush with the
   // flat base of the body instead of bulging below it.
   const floor = GROUND - TAIL_W / 2 - 0.5;
-  const pts = [tip, ...TAIL_AT.map((x) => [x, x >= 370 ? Math.min(at(x), floor) : at(x)]), [412, floor], [436, floor]];
+  const pts = [...spine.slice(0, -1).map(([x, y]) => [x, x >= 370 ? Math.min(y, floor) : y]), [412, floor], [436, floor]];
   // Catmull-Rom through the points, as cubic tangents.
   return shape(pts.map((p, n) => {
     const a = pts[Math.max(n - 1, 0)], b = pts[Math.min(n + 1, pts.length - 1)];

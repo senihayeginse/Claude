@@ -114,6 +114,7 @@ try {
 
   // Pure function of time: frame t must not depend on what was painted before it.
   if (!opt['no-check']) {
+    await shoot(0); // the first capture after a viewport resize can predate the relayout
     for (const t of [duration * 0.37, duration * 0.71].map((t) => Math.round(t * fps) / fps)) {
       const a = await shoot(t);
       await shoot(0);
