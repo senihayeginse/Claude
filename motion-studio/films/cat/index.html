@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Cat</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #eeeeee; overflow: hidden; }
+  #stage { width: 100vw; height: 100vh; }
+</style>
+<div id="stage"></div>
+<script src="lottie_svg.min.js"></script>
+<script>
+  window.FILM = { width: 980, height: 736, duration: 12, fps: 30 };
+  // Plays on loop in a browser; under render.mjs it only moves when seek(t) is called.
+  const ready = fetch('cat.json')
+    .then((r) => r.json())
+    .then((animationData) => lottie.loadAnimation({
+      container: document.getElementById('stage'),
+      renderer: 'svg',
+      loop: !window.RENDER,
+      autoplay: !window.RENDER,
+      animationData,
+    }));
+  window.seek = async (t) => (await ready).goToAndStop(Math.min(t * FILM.fps, FILM.duration * FILM.fps - 0.001), true);
+</script>
