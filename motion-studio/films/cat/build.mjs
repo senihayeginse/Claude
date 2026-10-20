@@ -200,7 +200,8 @@ const cat = {
 };
 
 const lottie = { v: '5.12.0', nm: 'cat', fr: FPS, ip: 0, op: END, w: W, h: H, ddd: 0, assets: [], layers: [cat] };
-writeFileSync(path.join(here, 'cat.json'), JSON.stringify(lottie));
+// Two decimals is far below a pixel and halves the file.
+writeFileSync(path.join(here, 'cat.json'), JSON.stringify(lottie, (k, v) => (typeof v === 'number' ? Math.round(v * 100) / 100 : v)));
 copyFileSync(path.join(here, '../../node_modules/lottie-web/build/player/lottie_svg.min.js'), path.join(here, 'lottie_svg.min.js'));
 const nKeys = (p) => p.k.length;
 console.log(`cat.json: ${W}x${H}, ${END / FPS}s @ ${FPS}fps; keys: body ${nKeys(cat.shapes[2].it[0].ks)}, ` +
